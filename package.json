@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@napi-rs/canvas": "^0.1.44"
+    "@napi-rs/canvas": "^0.1.44",
+    "@fontsource/roboto": "^5.0.8",
+    "@fontsource/orbitron": "^5.0.8",
+    "@fontsource/poppins": "^5.0.8"
   }
 }
