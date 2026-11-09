@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#101510">
+<title>Image Engine — Renderer Playground</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg:#0d110e; --panel:#151c17; --panel2:#1b251e; --line:#29372d;
+  --text:#edf4ee; --muted:#91a196; --green:#8bd49b; --green2:#b5edbd;
+  --danger:#ff8f8f; --radius:15px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button,textarea,input{font:inherit}
+.topbar{height:62px;padding:0 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:#111812;position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;font-weight:750;letter-spacing:.2px}
+.logo{width:31px;height:31px;border-radius:10px;background:#263d2b;display:grid;place-items:center;color:var(--green2);font-size:17px}
+.status{color:var(--muted);font-size:12px}
+main{max-width:1200px;margin:0 auto;padding:22px 18px 40px}
+.intro{margin:0 0 18px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:-.5px}
+.sub{color:var(--muted);margin:0}
+.workspace{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:16px;align-items:stretch}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;min-width:0}
+.panel-head{padding:13px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel-title{font-weight:700}
+.panel-hint{color:var(--muted);font-size:12px}
+.editor-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 14px 0}
+select,.small-input{background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:7px 9px;min-width:0}
+#code{display:block;width:100%;height:390px;resize:vertical;border:0;outline:0;background:#101612;color:#d7e8da;padding:15px;font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:2;white-space:pre;overflow:auto}
+.editor-foot{padding:12px 14px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.dimensions{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px}
+.dimensions input{width:68px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+button{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:9px 13px;border-radius:10px;cursor:pointer;font-weight:650}
+button:active{transform:translateY(1px)}
+button.primary{background:var(--green);border-color:var(--green);color:#102015}
+button:disabled{opacity:.45;cursor:not-allowed}
+.preview-wrap{padding:16px;display:flex;flex-direction:column;gap:12px}
+.preview-stage{min-height:310px;border:1px dashed #3a4a3e;border-radius:12px;background-color:#111712;background-image:linear-gradient(45deg,#18211b 25%,transparent 25%),linear-gradient(-45deg,#18211b 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#18211b 75%),linear-gradient(-45deg,transparent 75%,#18211b 75%);background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0;display:grid;place-items:center;overflow:hidden;padding:10px}
+#preview{display:block;max-width:100%;max-height:440px;width:auto;height:auto;object-fit:contain;box-shadow:0 10px 35px #0008}
+.placeholder{text-align:center;color:var(--muted);padding:25px}
+.placeholder strong{display:block;color:#c9d8cc;font-size:14px;margin-bottom:5px}
+.result-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+#message{font-size:12px;color:var(--muted);min-height:18px}
+#message.error{color:var(--danger)}
+.note{margin-top:16px;padding:12px 14px;background:#18231b;border:1px solid #304635;border-radius:12px;color:#b9cbbd;font-size:12px}
+.note strong{color:var(--green2)}
+@media(max-width:800px){.workspace{grid-template-columns:1fr}#code{height:320px}.preview-stage{min-height:250px}main{padding:17px 12px 30px}.topbar{padding:0 13px}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><div class="logo">▧</div><span>IMAGE ENGINE</span></div>
+  <div class="status">RENDERER PLAYGROUND <span style="color:#8bd49b">●</span></div>
+</header>
+<main>
+  <section class="intro">
+    <h1>JavaScript → Image</h1>
+    <p class="sub">Write a drawing program, run it, and export the result as a PNG.</p>
+  </section>
+
+  <div class="workspace">
+    <section class="panel">
+      <div class="panel-head">
+        <div><div class="panel-title">Source code</div><div class="panel-hint">Your code runs inside a restricted iframe.</div></div>
+        <span class="panel-hint">JS</span>
+      </div>
+      <div class="editor-tools">
+        <select id="example" aria-label="Load example">
+          <option value="profile">Profile card example</option>
+          <option value="gradient">Gradient example</option>
+          <option value="shapes">Shapes example</option>
+          <option value="assets">Fonts & images example</option>
+        </select>
+        <button id="reset" type="button">Reset code</button>
+      </div>
+      <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="JavaScript source"></textarea>
+      <div class="editor-foot">
+        <div class="dimensions">
+          <span>W</span><input class="small-input" id="width" type="number" min="1" max="1600" value="900">
+          <span>H</span><input class="small-input" id="height" type="number" min="1" max="1600" value="520">
+        </div>
+        <div class="actions">
+          <button class="primary" id="run" type="button">▶ Run code</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div><div class="panel-title">Image preview</div><div class="panel-hint">Transparent areas show the checkerboard.</div></div>
+        <span class="panel-hint" id="size-label">900 × 520</span>
+      </div>
+      <div class="preview-wrap">
+        <div class="preview-stage" id="stage">
+          <div class="placeholder" id="placeholder"><strong>Your image will appear here</strong>Run the JavaScript to render a preview.</div>
+          <img id="preview" alt="Generated image preview" hidden>
+        </div>
+        <div class="result-row">
+          <div id="message" role="status">Ready when you are.</div>
+          <button id="download" type="button" disabled>↓ Download PNG</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="note"><strong>Prototype note:</strong> This is a local playground, not the public bot API yet. The code runs in a sandboxed iframe with network access blocked by its content policy. Do not treat a browser iframe as a complete security boundary for a public multi-user service.</div>
+</main>
+
+<iframe id="runner" title="Isolated JavaScript renderer" sandbox="allow-scripts" hidden></iframe>
+
+<script>
+(() => {
+  const examples = {
+    profile: `function render({ canvas, ctx, width, height }) {
+  // Background
+  ctx.fillStyle = "#171b2c";
+  ctx.fillRect(0, 0, width, height);
+
+  // Decorative circles
+  ctx.fillStyle = "#252e49";
+  ctx.beginPath();
+  ctx.arc(width - 90, 75, 145, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Card panel
+  ctx.fillStyle = "#222941";
+  ctx.beginPath();
+  ctx.roundRect(35, 35, width - 70, height - 70, 24);
+  ctx.fill();
+
+  // Heading
+  ctx.fillStyle = "#f5d58a";
+  ctx.font = "bold 20px Arial";
+  ctx.fillText("SPACE TIME  /  PLAYER FILE", 65, 85);
+
+  // Player name
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 48px Arial";
+  ctx.fillText("COSMIC DUDE", 65, 165);
+
+  // Stats
+  const stats = [
+    ["CREDITS", "250"],
+    ["HEALTH", "85 / 100"],
+    ["ENERGY", "60 / 100"]
+  ];
+  stats.forEach((item, i) => {
+    const x = 65 + i * 245;
+    ctx.fillStyle = "#aab6d2";
+    ctx.font = "14px Arial";
+    ctx.fillText(item[0], x, 245);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 27px Arial";
+    ctx.fillText(item[1], x, 285);
+  });
+
+  ctx.fillStyle = "#9ca8c4";
+  ctx.font = "16px Arial";
+  ctx.fillText("LOCATION  •  THE NEIGHBOURHOOD", 65, height - 75);
+}`,
+    gradient: `function render({ canvas, ctx, width, height }) {
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, "#102b35");
+  gradient.addColorStop(0.55, "#315b53");
+  gradient.addColorStop(1, "#d49b62");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.fillStyle = "#fff4d6";
+  ctx.font = "bold 54px Arial";
+  ctx.fillText("A STRANGE DAY", 55, 115);
+
+  ctx.font = "22px Arial";
+  ctx.fillText("Somewhere, something unusual is happening.", 58, 160);
+
+  for (let i = 0; i < 18; i++) {
+    ctx.beginPath();
+    ctx.arc((i * 137) % width, (i * 71) % height, 3 + (i % 4), 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,244,214,0.65)";
+    ctx.fill();
+  }
+}`,
+    shapes: `function render({ canvas, ctx, width, height }) {
+  ctx.fillStyle = "#101b16";
+  ctx.fillRect(0, 0, width, height);
+
+  const colors = ["#8bd49b", "#f3c969", "#e78b83", "#8fa9e8", "#c49ae8"];
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = colors[i];
+    ctx.beginPath();
+    ctx.arc(120 + i * 165, height / 2, 52, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = "#f0f5ef";
+  ctx.font = "bold 30px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("CANVAS TEST", width / 2, 75);
+  ctx.textAlign = "left";
+}`,
+    assets: `async function render({ canvas, ctx, width, height }) {
+  ctx.fillStyle = "#17231c";
+  ctx.fillRect(0, 0, width, height);
+
+  // Load an image. This SVG data URL works offline.
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><circle cx="90" cy="90" r="82" fill="#8bd49b"/><path d="M48 108 L90 38 L132 108 Z" fill="#183d2a"/><circle cx="90" cy="112" r="12" fill="#f3c969"/></svg>';
+  const picture = await loadImage("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
+  ctx.drawImage(picture, 55, 100, 180, 180);
+
+  // Custom font example:
+  // Replace the URL with a direct .woff2, .woff or .ttf font file URL.
+  // The font host must allow cross-origin font loading (CORS).
+  // await loadFont("MyCustomFont", "https://your-host.com/my-font.woff2");
+
+  ctx.fillStyle = "#f4f5ee";
+  ctx.font = "bold 38px Arial";
+  ctx.fillText("ASSETS LOADED", 275, 155);
+  ctx.font = "20px Arial";
+  ctx.fillStyle = "#b9cbbd";
+  ctx.fillText("Images can now be drawn into Canvas.", 278, 198);
+  ctx.fillText("Add a font URL with loadFont() to use", 278, 232);
+  ctx.fillText("your own typography.", 278, 262);
+}`
+  };
+
+  const code = document.getElementById("code");
+  const runner = document.getElementById("runner");
+  const preview = document.getElementById("preview");
+  const placeholder = document.getElementById("placeholder");
+  const message = document.getElementById("message");
+  const runButton = document.getElementById("run");
+  const downloadButton = document.getElementById("download");
+  const widthInput = document.getElementById("width");
+  const heightInput = document.getElementById("height");
+  let latestImage = null;
+  let runId = 0;
+
+  function setMessage(text, isError = false) {
+    message.textContent = text;
+    message.classList.toggle("error", isError);
+  }
+
+  function loadExample(name) {
+    code.value = examples[name] || examples.profile;
+  }
+
+  document.getElementById("example").addEventListener("change", e => loadExample(e.target.value));
+  document.getElementById("reset").addEventListener("click", () => {
+    document.getElementById("example").value = "profile";
+    loadExample("profile");
+    setMessage("Example restored.");
+  });
+
+  function buildRunnerSource(source, width, height, id) {
+    // CSP blocks network connections and external resources. unsafe-eval is needed
+    // because user-submitted JavaScript is compiled inside this isolated frame.
+    return `<!doctype html><html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data: blob: https: http:; font-src data: blob: https: http:; connect-src 'none';">
+</head><body style="margin:0;background:transparent">
+<canvas id="c" width="${width}" height="${height}"></canvas>
+<script>
+(async function() {
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  const width = ${width}, height = ${height};
+  try {
+    const userCode = ${JSON.stringify(source)};
+    function checkAssetUrl(assetUrl, kind) {
+      if (typeof assetUrl !== "string" || !assetUrl.trim()) {
+        throw new Error(kind + " URL must be a non-empty string.");
+      }
+      const value = assetUrl.trim();
+      if (/^data:/i.test(value)) {
+        const allowed = kind === "Image"
+          ? /^data:image\\/(png|jpeg|jpg|gif|webp|svg\\+xml);/i
+          : /^data:font\\/(woff2?|ttf|otf);|^data:application\\/(font-woff2?|x-font-ttf|vnd\\.ms-fontobject);/i;
+        if (!allowed.test(value)) throw new Error("Unsupported " + kind.toLowerCase() + " data URL type.");
+        return value;
+      }
+      let parsed;
+      try { parsed = new URL(value); } catch (_) {
+        throw new Error(kind + " URL must be an absolute HTTPS URL or a supported data URL.");
+      }
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+        throw new Error(kind + " URL must use HTTPS or HTTP.");
+      }
+      return parsed.href;
+    }
+
+    function loadImage(url) {
+      return new Promise((resolve, reject) => {
+        let safeUrl;
+        try { safeUrl = checkAssetUrl(url, "Image"); }
+        catch (error) { reject(error); return; }
+        const image = new Image();
+        if (!safeUrl.startsWith("data:")) image.crossOrigin = "anonymous";
+        const timer = setTimeout(() => {
+          image.src = "";
+          reject(new Error("Image loading timed out."));
+        }, 10000);
+        image.onload = () => { clearTimeout(timer); resolve(image); };
+        image.onerror = () => {
+          clearTimeout(timer);
+          reject(new Error("Image failed to load. Check the URL and make sure its host allows CORS."));
+        };
+        image.src = safeUrl;
+      });
+    }
+
+    async function loadFont(family, url, descriptors = {}) {
+      if (typeof family !== "string" || !family.trim()) {
+        throw new Error("loadFont() needs a font family name.");
+      }
+      const safeUrl = checkAssetUrl(url, "Font");
+      const source = 'url("' + safeUrl.replace(/["\\\\]/g, "\\\\$&") + '")';
+      const face = new FontFace(family, source, descriptors);
+      await face.load();
+      document.fonts.add(face);
+      return family;
+    }
+
+    const execute = new Function("canvas", "ctx", "width", "height", "loadImage", "loadFont",
+      '"use strict";\\n' + userCode + '\\n; if (typeof render !== "function") throw new Error("Your code must define function render({ canvas, ctx, width, height })."); return render({ canvas, ctx, width, height });'
+    );
+    await Promise.race([
+      Promise.resolve(execute(canvas, ctx, width, height, loadImage, loadFont)),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Rendering timed out after 12 seconds.")), 12000))
+    ]);
+    parent.postMessage({ type: "render-result", id: ${id}, image: canvas.toDataURL("image/png") }, "*");
+  } catch (error) {
+    parent.postMessage({ type: "render-error", id: ${id}, error: String(error && error.message || error) }, "*");
+  }
+})();
+<\/script></body></html>`;
+  }
+
+  runButton.addEventListener("click", () => {
+    const width = Math.max(1, Math.min(1600, Number(widthInput.value) || 900));
+    const height = Math.max(1, Math.min(1600, Number(heightInput.value) || 520));
+    widthInput.value = width;
+    heightInput.value = height;
+    document.getElementById("size-label").textContent = width + " × " + height;
+    const id = ++runId;
+    runButton.disabled = true;
+    downloadButton.disabled = true;
+    latestImage = null;
+    setMessage("Rendering…");
+
+    const source = code.value;
+    runner.srcdoc = buildRunnerSource(source, width, height, id);
+
+    // A fresh iframe per run helps discard the previous execution context.
+    runner.onload = () => {};
+    window.setTimeout(() => {
+      if (id === runId && runButton.disabled) {
+        runButton.disabled = false;
+        setMessage("No response. Check the code and try again.", true);
+      }
+    }, 12500);
+  });
+
+  window.addEventListener("message", event => {
+    if (event.source !== runner.contentWindow) return;
+    const data = event.data;
+    if (!data || data.id !== runId) return;
+
+    runButton.disabled = false;
+    if (data.type === "render-error") {
+      setMessage("Error: " + data.error, true);
+      return;
+    }
+    if (data.type === "render-result" && typeof data.image === "string" && data.image.startsWith("data:image/png;base64,")) {
+      latestImage = data.image;
+      preview.src = latestImage;
+      preview.hidden = false;
+      placeholder.hidden = true;
+      downloadButton.disabled = false;
+      setMessage("Rendered successfully.");
+    }
+  });
+
+  downloadButton.addEventListener("click", () => {
+    if (!latestImage) return;
+    const link = document.createElement("a");
+    link.href = latestImage;
+    link.download = "image-engine-render.png";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  });
+
+  loadExample("profile");
+})();
+</script>
+</body>
+</html>
