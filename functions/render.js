@@ -1,6 +1,22 @@
-const { createCanvas } = require("@napi-rs/canvas");
+const { createCanvas, GlobalFonts } = require("@napi-rs/canvas");
+const path = require("path");
 const templates = require("../lib/templates");
 const { sanitize } = require("../lib/sanitize");
+
+// 1. REGISTER THE FONTS
+// This tells the server where to find the Roboto font files
+try {
+  GlobalFonts.registerFromPath(
+    path.join(process.cwd(), "node_modules/@fontsource/roboto/files/roboto-latin-400-normal.woff"),
+    "Roboto"
+  );
+  GlobalFonts.registerFromPath(
+    path.join(process.cwd(), "node_modules/@fontsource/roboto/files/roboto-latin-700-normal.woff"),
+    "Roboto"
+  );
+} catch (e) {
+  console.error("Font loading failed:", e);
+}
 
 exports.handler = async (event) => {
   const q = event.queryStringParameters || {};
@@ -17,7 +33,7 @@ exports.handler = async (event) => {
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext("2d");
     
-    // Run the template function
+    // 2. RUN THE TEMPLATE
     await fn({ canvas, ctx, width, height, params });
     
     const png = canvas.toBuffer("image/png");
