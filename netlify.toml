@@ -4,3 +4,4 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["@napi-rs/canvas", "@napi-rs/canvas-linux-x64-gnu"]
+  included_files = ["node_modules/@fontsource/roboto/files/**"]
