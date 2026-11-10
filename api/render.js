@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const templates = require("../lib/templates");
 const { sanitize } = require("../lib/sanitize");
+const { loadImage } = require("../lib/assets");
 
 const fontBuffers = [];
 
@@ -11,14 +12,17 @@ function registerFont(pkg, fileName, familyName) {
     const fontPath = path.join(process.cwd(), "node_modules", pkg, "files", fileName);
     if (fs.existsSync(fontPath)) {
       const buffer = fs.readFileSync(fontPath);
-      fontBuffers.push(buffer);
+      fontBuffers.push(buffer); 
       GlobalFonts.register(buffer, familyName);
+    } else {
+      console.error(`Font file not found: ${fontPath}`);
     }
   } catch (err) {
-    console.error(`Failed to load ${familyName}`, err);
+    console.error(`Failed to load ${familyName}:`, err.message);
   }
 }
 
+// Register fonts here at the top
 registerFont("@fontsource/roboto", "roboto-latin-400-normal.woff", "Roboto");
 registerFont("@fontsource/roboto", "roboto-latin-700-normal.woff", "Roboto");
 registerFont("@fontsource/orbitron", "orbitron-latin-400-normal.woff", "Orbitron");
@@ -26,9 +30,7 @@ registerFont("@fontsource/orbitron", "orbitron-latin-700-normal.woff", "Orbitron
 registerFont("@fontsource/poppins", "poppins-latin-400-normal.woff", "Poppins");
 registerFont("@fontsource/poppins", "poppins-latin-700-normal.woff", "Poppins");
 
-// VERCEL FORMAT: (req, res) instead of (event)
 module.exports = async (req, res) => {
-  // Vercel uses req.query instead of event.queryStringParameters
   const q = req.query || {};
   const { template = "profile", w, h, ...rest } = q;
 
@@ -43,11 +45,11 @@ module.exports = async (req, res) => {
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext("2d");
     
-    await fn({ canvas, ctx, width, height, params });
+    // Pass loadImage to the templates so they can draw pictures!
+    await fn({ canvas, ctx, width, height, params, loadImage });
     
     const png = canvas.toBuffer("image/png");
     
-    // Send the raw image buffer to Vercel
     res.setHeader("Content-Type", "image/png");
     res.setHeader("Cache-Control", "no-store");
     return res.status(200).send(png);
